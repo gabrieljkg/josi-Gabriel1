@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'gabrielcalid@gmail.com' && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Message ---
+    function isValidMessage(data) {
+      return data.keys().hasAll(['name', 'text', 'createdAt']) &&
+             data.keys().size() >= 3 && data.keys().size() <= 4 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 20)) &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 1000 &&
+             data.createdAt == request.time;
+    }
+
+    match /messages/{messageId} {
+      allow get: if isValidId(messageId);
+      allow list: if true; // Public guestbook
+      allow create: if isValidId(messageId) && isValidMessage(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // --- Rsvp ---
+    function isValidRsvp(data) {
+      return data.keys().hasAll(['name', 'phone', 'createdAt']) &&
+             data.keys().size() == 3 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 20 &&
+             data.createdAt == request.time;
+    }
+
+    match /rsvps/{rsvpId} {
+      allow get: if isValidId(rsvpId);
+      allow list: if true; // Or isAdmin(), but let's allow public if needed
+      allow create: if isValidId(rsvpId) && isValidRsvp(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // --- Gift ---
+    function isValidGift(data) {
+      return data.keys().hasAll(['name', 'value', 'imageUrls', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.value is number && data.value >= 0 &&
+             data.imageUrls is list && data.imageUrls.size() <= 3 &&
+             (data.imageUrls.size() == 0 || (data.imageUrls[0] is string)) &&
+             data.createdAt == request.time;
+    }
+
+    function isUpdateGift(data) {
+      return data.keys().hasAll(['name', 'value', 'imageUrls', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.value is number && data.value >= 0 &&
+             data.imageUrls is list && data.imageUrls.size() <= 3 &&
+             (data.imageUrls.size() == 0 || (data.imageUrls[0] is string));
+             // Don't check createdAt for updates unless it should remain untouched
+    }
+
+    match /gifts/{giftId} {
+      allow get: if isValidId(giftId);
+      allow list: if true; // Public registry
+      // Only Admin can add/remove/edit gifts
+      allow create: if isAdmin() && isValidId(giftId) && isValidGift(incoming());
+      allow update: if isAdmin() && isUpdateGift(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+    }
+  }
+}

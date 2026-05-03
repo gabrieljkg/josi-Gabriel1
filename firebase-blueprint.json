@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "Message": {
+      "title": "Message",
+      "description": "A guestbook message",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 20 },
+        "text": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "timestamp" }
+      },
+      "required": ["name", "text", "createdAt"]
+    },
+    "Rsvp": {
+      "title": "Rsvp",
+      "description": "A guest RSVP",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "string", "format": "timestamp" }
+      },
+      "required": ["name", "phone", "createdAt"]
+    },
+    "Gift": {
+      "title": "Gift",
+      "description": "A gift in the registry",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "value": { "type": "number", "minimum": 0 },
+        "imageUrls": { "type": "array", "items": { "type": "string" }, "maxItems": 3 },
+        "createdAt": { "type": "string", "format": "timestamp" }
+      },
+      "required": ["name", "value", "createdAt"]
+    }
+  },
+  "firestore": {
+    "messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Collection of guest messages"
+    },
+    "rsvps/{rsvpId}": {
+      "schema": { "$ref": "#/entities/Rsvp" },
+      "description": "Collection of RSVPs"
+    },
+    "gifts/{giftId}": {
+      "schema": { "$ref": "#/entities/Gift" },
+      "description": "Collection of gifts"
+    }
+  }
+}
