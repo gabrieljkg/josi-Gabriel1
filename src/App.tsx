@@ -79,12 +79,71 @@ function SharedLayout() {
   );
 }
 
+function Countdown() {
+  const targetDate = new Date('2026-08-13T00:00:00').getTime();
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const now = new Date().getTime();
+      const difference = targetDate - now;
+
+      if (difference <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000),
+        });
+      }
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  if (!timeLeft) return null;
+
+  return (
+    <div className="flex gap-3 sm:gap-6 justify-center mt-12 bg-white/40 backdrop-blur-md p-6 sm:p-8 rounded-[2rem] border border-blue-100 shadow-sm max-w-md mx-auto">
+      <div className="flex flex-col items-center min-w-[60px]">
+        <span className="text-3xl sm:text-4xl font-serif text-blue-900 font-bold">{timeLeft.days}</span>
+        <span className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-500 font-medium">Dias</span>
+      </div>
+      <div className="text-3xl font-serif text-blue-200 mt-[-2px]">:</div>
+      <div className="flex flex-col items-center min-w-[60px]">
+        <span className="text-3xl sm:text-4xl font-serif text-blue-900 font-bold">{timeLeft.hours.toString().padStart(2, '0')}</span>
+        <span className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-500 font-medium">Horas</span>
+      </div>
+      <div className="text-3xl font-serif text-blue-200 mt-[-2px] uppercase">:</div>
+      <div className="flex flex-col items-center min-w-[60px]">
+        <span className="text-3xl sm:text-4xl font-serif text-blue-900 font-bold">{timeLeft.minutes.toString().padStart(2, '0')}</span>
+        <span className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-500 font-medium">Mins</span>
+      </div>
+      <div className="text-3xl font-serif text-blue-200 mt-[-2px]">:</div>
+      <div className="flex flex-col items-center min-w-[60px]">
+        <span className="text-3xl sm:text-4xl font-serif text-blue-900 font-bold">{timeLeft.seconds.toString().padStart(2, '0')}</span>
+        <span className="text-[10px] sm:text-xs uppercase tracking-widest text-slate-500 font-medium">Segs</span>
+      </div>
+    </div>
+  );
+}
+
 function Inicio() {
   return (
     <div className="text-center w-full">
       <Heart className="w-16 h-16 text-blue-500 mx-auto mb-6 opacity-80" />
       <h1 className="text-5xl md:text-7xl font-serif text-blue-900 mb-4 drop-shadow-sm">Josi & Gabriel</h1>
       <p className="text-xl md:text-2xl text-blue-700 tracking-wider">13 . 08 . 2026</p>
+      <Countdown />
     </div>
   );
 }
@@ -526,12 +585,39 @@ function AdminPanel() {
     }
   }
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
   const handleDeleteGift = async (id: string) => {
-    if (!confirm('Excluir presente?')) return;
+    if (!id) return;
+    
+    // Custom confirmation logic to avoid iframe window.confirm blocks
+    if (confirmingId !== id) {
+      setConfirmingId(id);
+      // Automatically reset confirmation after 4 seconds
+      setTimeout(() => {
+        setConfirmingId(prev => prev === id ? null : prev);
+      }, 4000);
+      return;
+    }
+
     try {
-      await deleteDoc(doc(db, 'gifts', id));
-    } catch (error) {
+      setDeletingId(id);
+      setConfirmingId(null);
+      console.log('Iniciando exclusão do documento:', id);
+      const giftRef = doc(db, 'gifts', id);
+      await deleteDoc(giftRef);
+      console.log('Documento excluído com sucesso');
+      alert('Presente removido!');
+    } catch (error: any) {
+       console.error('Erro ao excluir:', error);
+       const errorMsg = error.code === 'permission-denied' 
+         ? 'Permissão negada. Verifique se você é o admin (gabrielcalid@gmail.com).' 
+         : 'Erro: ' + (error.message || 'Erro desconhecido');
+       alert(errorMsg);
        handleFirestoreError(error, OperationType.DELETE, `gifts/${id}`);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -557,9 +643,22 @@ function AdminPanel() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-blue-900 text-white p-4 shadow-sm flex justify-between items-center z-10 relative">
-        <h1 className="font-medium flex items-center gap-2"><Lock className="w-5 h-5"/> Painel dos Noivos</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-blue-200 hidden sm:inline">{user.email}</span>
+        <h1 className="font-medium flex items-center gap-2">
+          <Lock className="w-5 h-5"/> Painel dos Noivos 
+          {user.email === 'gabrielcalid@gmail.com' ? (
+            <span className="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full ml-2 uppercase font-bold tracking-wider">Admin</span>
+          ) : (
+            <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full ml-2 uppercase font-bold tracking-wider">Acesso p/ Leitura</span>
+          )}
+        </h1>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button 
+            onClick={() => window.open(window.location.href, '_blank')}
+            className="text-[10px] sm:text-xs bg-blue-800 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer border border-blue-700 hidden sm:flex items-center gap-1"
+          >
+            Abrir em nova aba
+          </button>
+          <span className="text-sm text-blue-200 hidden lg:inline">{user.email}</span>
           <button onClick={logout} className="p-2 hover:bg-blue-800 rounded-full transition-colors cursor-pointer" title="Sair">
             <LogOut className="w-5 h-5" />
           </button>
@@ -653,7 +752,17 @@ function AdminPanel() {
                     <p className="text-sm text-slate-500">R$ {gift.value.toFixed(2)}</p>
                   </div>
                 </div>
-                <button onClick={() => handleDeleteGift(gift.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors text-sm font-medium cursor-pointer">Excluir</button>
+                <button 
+                  onClick={() => handleDeleteGift(gift.id)} 
+                  disabled={deletingId === gift.id}
+                  className={`px-3 py-2 rounded-lg transition-all text-sm font-medium cursor-pointer disabled:opacity-50 ${
+                    confirmingId === gift.id 
+                      ? 'bg-red-600 text-white hover:bg-red-700 shadow-md transform scale-105' 
+                      : 'text-red-500 hover:bg-red-50'
+                  }`}
+                >
+                  {deletingId === gift.id ? 'Excluindo...' : confirmingId === gift.id ? 'Confirmar Exclusão?' : 'Excluir'}
+                </button>
               </div>
             ))}
           </div>
