@@ -1,4 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", serif;
+  --font-script: "Great Vibes", cursive;
+  --font-sans: "Montserrat", sans-serif;
+}
+
+body {
+  @apply antialiased;
+}
+
+.watercolor-bg {
+  background-color: #f0f7ff;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(186, 230, 253, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(186, 230, 253, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 80%);
+  background-attachment: fixed;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
+}
 
 html {
   scroll-behavior: smooth;
