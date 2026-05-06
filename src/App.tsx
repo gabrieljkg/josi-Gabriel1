@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
-import { Heart, Calendar, Camera, MessageCircle, CheckCircle, Gift, Lock, LogOut, Menu, X, Upload } from 'lucide-react';
+import { Heart, Calendar, Camera, MessageCircle, CheckCircle, Gift, Lock, LogOut, Menu, X, Upload, Trash2 } from 'lucide-react';
 import { auth, db, storage } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { handleFirestoreError, OperationType } from './lib/firebaseUtils';
 
@@ -41,12 +41,12 @@ function SharedLayout() {
             <NavLink 
               key={link.name} 
               to={link.href} 
-              className={({isActive}) => `px-6 py-2 rounded-md text-sm font-medium transition-all ${isActive ? 'bg-blue-400 text-white shadow-md transform scale-105' : 'bg-blue-300/60 text-white hover:bg-blue-400'}`}
+              className={({isActive}) => `px-6 py-2 rounded-md text-sm font-medium transition-all ${isActive ? 'bg-blue-900 text-white shadow-md transform scale-105' : 'bg-blue-800 text-white hover:bg-blue-900'}`}
             >
               {link.name}
             </NavLink>
           ))}
-          <Link to="/admin" className="px-6 py-2 rounded-md text-sm font-medium bg-blue-100 text-blue-400 hover:bg-blue-200 transition-all flex items-center gap-1">
+          <Link to="/admin" className="px-6 py-2 rounded-md text-sm font-medium bg-blue-100/50 text-blue-900 hover:bg-blue-200 transition-all flex items-center gap-1">
              <Lock className="w-4 h-4" />
           </Link>
         </nav>
@@ -66,12 +66,12 @@ function SharedLayout() {
           <NavLink 
             key={link.name} 
             to={link.href} 
-            className={({isActive}) => `text-xl font-medium ${isActive ? 'text-blue-500 underline underline-offset-8' : 'text-slate-500'}`}
+            className={({isActive}) => `text-xl font-medium ${isActive ? 'text-blue-800 underline underline-offset-8' : 'text-slate-500'}`}
           >
             {link.name}
           </NavLink>
         ))}
-        <Link to="/admin" className="text-xl font-medium text-blue-300 flex items-center gap-2 pt-8 border-t border-blue-50 w-full justify-center">
+        <Link to="/admin" className="text-xl font-medium text-blue-800 flex items-center gap-2 pt-8 border-t border-blue-50 w-full justify-center">
            <Lock size={20} /> Admin
         </Link>
       </aside>
@@ -191,7 +191,75 @@ function Historia() {
   );
 }
 
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 function Casamento() {
+  const [eventImage, setEventImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'site_images', 'evento'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().base64) {
+        setEventImage(docSnap.data().base64);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        if (!auth.currentUser) {
+          await signInWithPopup(auth, new GoogleAuthProvider());
+        }
+        const base64 = await compressImage(e.target.files[0]);
+        await setDoc(doc(db, 'site_images', 'evento'), { base64 });
+        alert('Foto atualizada com sucesso!');
+      } catch (err: any) {
+        console.error(err);
+        if (err.code === 'permission-denied') {
+          alert('Apenas o administrador (gabrielcalid@gmail.com) pode mudar a foto.');
+        } else {
+          alert('Erro ao atualizar foto. Tente novamente.');
+        }
+      }
+    }
+  };
+
   return (
     <div className="w-full space-y-12 bg-white/60 backdrop-blur-sm p-8 md:p-16 rounded-[3rem] border border-blue-100/50 text-center shadow-sm">
       <div className="space-y-4">
@@ -209,11 +277,29 @@ function Casamento() {
             <p className="text-2xl text-slate-700 font-light italic">Em breve mais informações...</p>
           </div>
         </div>
-        <div className="aspect-[4/5] bg-blue-50/50 rounded-2xl overflow-hidden shadow-inner border border-blue-100/50 flex items-center justify-center">
-          <div className="text-center p-8">
-            <Camera className="w-12 h-12 text-blue-200 mx-auto mb-4" />
-            <p className="text-blue-300 font-light italic">Espaço para Foto / Convite</p>
+        <div className="space-y-4">
+          <div className="aspect-[4/5] bg-blue-50/50 rounded-2xl overflow-hidden shadow-inner border border-blue-100/50 flex items-center justify-center relative">
+            <img 
+              src={eventImage || "/foto-evento.jpg"} 
+              alt="Foto do Evento ou Convite" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  e.currentTarget.nextElementSibling.classList.remove('hidden');
+                }
+              }}
+            />
+            <div className="text-center p-8 absolute inset-0 flex flex-col items-center justify-center hidden">
+               <Camera className="w-12 h-12 text-blue-200 mx-auto mb-4" />
+               <p className="text-blue-300 font-light italic">Nenhuma foto adicionada</p>
+            </div>
           </div>
+          
+          <label className="flex items-center justify-center gap-2 w-full py-4 bg-blue-400 hover:bg-blue-500 text-white font-medium rounded-2xl transition-all shadow-md active:scale-[0.98] cursor-pointer">
+            <Upload className="w-5 h-5" /> Mudar Foto do Evento
+            <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+          </label>
         </div>
       </div>
     </div>
@@ -221,6 +307,38 @@ function Casamento() {
 }
 
 function Fotos() {
+  const [galleryImages, setGalleryImages] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'site_images', 'galeria'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().images) {
+        setGalleryImages(docSnap.data().images);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const handleUpload = async (pos: number, file: File) => {
+    try {
+      if (!auth.currentUser) {
+        await signInWithPopup(auth, new GoogleAuthProvider());
+      }
+      const base64 = await compressImage(file);
+      const currentDoc = await getDoc(doc(db, 'site_images', 'galeria'));
+      const images = currentDoc.exists() ? currentDoc.data().images || {} : {};
+      images[pos] = base64;
+      await setDoc(doc(db, 'site_images', 'galeria'), { images });
+      alert(`Momento ${pos} atualizado com sucesso!`);
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'permission-denied') {
+        alert('Apenas o administrador (gabrielcalid@gmail.com) pode mudar a foto.');
+      } else {
+        alert('Erro ao atualizar. Tente novamente.');
+      }
+    }
+  };
+
   return (
     <div className="w-full space-y-12 bg-white/60 backdrop-blur-sm p-8 md:p-16 rounded-[3rem] border border-blue-100/50 text-center shadow-sm">
       <div className="space-y-4">
@@ -229,10 +347,39 @@ function Fotos() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="aspect-square bg-white p-2 md:p-3 shadow-md rounded-sm transform odd:rotate-1 even:-rotate-1 hover:rotate-0 transition-transform duration-300 border border-slate-50">
-            <div className="w-full h-full bg-blue-50/50 flex items-center justify-center overflow-hidden">
-               <span className="text-blue-200 text-xs italic">Momentos {i}</span>
+          <div key={i} className="aspect-square bg-white p-2 md:p-3 shadow-md rounded-[1rem] transform odd:rotate-1 even:-rotate-1 hover:rotate-0 transition-all duration-300 border border-slate-50 group relative">
+            <div className="w-full h-full bg-blue-50/50 flex items-center justify-center overflow-hidden relative rounded-lg">
+              <img 
+                src={galleryImages[i] || `/foto-galeria-${i}.jpg`} 
+                alt={`Momento ${i}`} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.classList.remove('hidden');
+                  }
+                }}
+              />
+              <div className="text-center p-4 absolute inset-0 flex flex-col items-center justify-center hidden bg-blue-50/50">
+                <Camera className="w-8 h-8 text-blue-200 mx-auto mb-2" />
+                <span className="text-blue-300 font-light italic text-sm mt-1">Vazio</span>
+              </div>
             </div>
+            
+            <label className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-[1rem] cursor-pointer">
+              <Upload className="w-8 h-8 text-white mb-2" />
+              <span className="text-white text-xs font-medium px-2 text-center">Alterar Foto</span>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleUpload(i, e.target.files[0]);
+                  }
+                }} 
+                className="hidden" 
+              />
+            </label>
           </div>
         ))}
       </div>
@@ -281,22 +428,27 @@ function Recados() {
         <h2 className="text-4xl md:text-5xl font-script text-blue-400">Deixe seu Recado</h2>
       </div>
 
-      <form onSubmit={handleSendMessage} className="bg-white/60 backdrop-blur-sm p-8 md:p-10 rounded-[2.5rem] border border-blue-100 shadow-sm space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest text-blue-900 font-semibold ml-1">Seu Nome</label>
-            <input required type="text" value={msgName} onChange={e => setMsgName(e.target.value)} placeholder="Como você quer ser identificado?" className="w-full px-5 py-3 rounded-xl bg-blue-50/30 border border-blue-100 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all placeholder:text-blue-200" />
+      <form onSubmit={handleSendMessage} className="bg-gradient-to-br from-blue-300/90 to-blue-400/90 backdrop-blur-md p-8 md:p-12 rounded-[3rem] shadow-2xl text-white relative overflow-hidden">
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
+        
+        <div className="relative z-10 space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-widest text-white/80 font-semibold ml-1">Seu Nome</label>
+              <input required type="text" value={msgName} onChange={e => setMsgName(e.target.value)} placeholder="Como você quer ser identificado?" className="w-full px-5 py-4 rounded-2xl bg-white/20 text-white placeholder-white/40 border-transparent focus:bg-white/30 focus:ring-2 focus:ring-white/50 outline-none transition-all" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-widest text-white/80 font-semibold ml-1">WhatsApp (Opcional)</label>
+              <input type="text" value={msgPhone} onChange={e => setMsgPhone(e.target.value)} placeholder="(00) 00000-0000" className="w-full px-5 py-4 rounded-2xl bg-white/20 text-white placeholder-white/40 border-transparent focus:bg-white/30 focus:ring-2 focus:ring-white/50 outline-none transition-all" />
+            </div>
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest text-blue-900 font-semibold ml-1">WhatsApp (Opcional)</label>
-            <input type="text" value={msgPhone} onChange={e => setMsgPhone(e.target.value)} placeholder="(00) 00000-0000" className="w-full px-5 py-3 rounded-xl bg-blue-50/30 border border-blue-100 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all placeholder:text-blue-200" />
+            <label className="text-[10px] uppercase tracking-widest text-white/80 font-semibold ml-1">Sua Mensagem</label>
+            <textarea required value={msgText} onChange={e => setMsgText(e.target.value)} rows={4} placeholder="Escreva algo carinhoso..." className="w-full px-5 py-4 rounded-[1.5rem] bg-white/20 text-white border-transparent focus:bg-white/30 focus:ring-2 focus:ring-white/50 outline-none transition-all resize-none placeholder-white/40"></textarea>
           </div>
+          <button type="submit" className="w-full py-4 mt-6 bg-white text-blue-400 hover:bg-blue-50 font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] cursor-pointer">Enviar Recado com Carinho</button>
         </div>
-        <div className="space-y-1.5">
-          <label className="text-[10px] uppercase tracking-widest text-blue-900 font-semibold ml-1">Sua Mensagem</label>
-          <textarea required value={msgText} onChange={e => setMsgText(e.target.value)} rows={4} placeholder="Escreva algo carinhoso..." className="w-full px-5 py-4 rounded-[1.5rem] bg-blue-50/30 border border-blue-100 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all resize-none placeholder:text-blue-200"></textarea>
-        </div>
-        <button type="submit" className="w-full py-4 bg-blue-400 hover:bg-blue-500 text-white font-medium rounded-xl transition-all shadow-md active:scale-[0.98] cursor-pointer">Enviar Recado com Carinho</button>
       </form>
 
       {messages.length > 0 && (
@@ -325,6 +477,16 @@ function Recados() {
 function Confirmacao() {
   const [rsvpName, setRsvpName] = useState('');
   const [rsvpPhone, setRsvpPhone] = useState('');
+  const [rsvps, setRsvps] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'rsvps'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setRsvps(msgs);
+    });
+    return () => unsub();
+  }, []);
 
   const handleSendRsvp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -351,7 +513,7 @@ function Confirmacao() {
         <p className="text-slate-500 font-light max-w-sm mx-auto tracking-wide">É uma alegria imensa ter você conosco. Por favor, confirme até 30 dias antes.</p>
       </div>
 
-      <form onSubmit={handleSendRsvp} className="bg-blue-400/90 backdrop-blur-md p-8 md:p-12 rounded-[3rem] shadow-2xl space-y-8 text-white relative overflow-hidden">
+      <form onSubmit={handleSendRsvp} className="bg-gradient-to-br from-blue-300/90 to-blue-400/90 backdrop-blur-md p-8 md:p-12 rounded-[3rem] shadow-2xl space-y-8 text-white relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
         
@@ -364,9 +526,44 @@ function Confirmacao() {
             <label className="text-[10px] uppercase tracking-widest text-white/80 font-semibold ml-1">Telefone WhatsApp</label>
             <input required type="text" value={rsvpPhone} onChange={e => setRsvpPhone(e.target.value)} placeholder="(00) 00000-0000" className="w-full px-5 py-4 rounded-2xl bg-white/20 text-white placeholder-white/40 border-transparent focus:bg-white/30 focus:ring-2 focus:ring-white/50 outline-none transition-all" />
           </div>
-          <button type="submit" className="w-full py-4 mt-6 bg-white text-blue-500 hover:bg-blue-50 font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] cursor-pointer">Confirmar Minha Presença</button>
+          <button type="submit" className="w-full py-4 mt-6 bg-white text-blue-400 hover:bg-blue-50 font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] cursor-pointer">Confirmar Minha Presença</button>
         </div>
       </form>
+
+      {rsvps.length > 0 && (
+        <div className="pt-8 space-y-6">
+          <h3 className="text-2xl font-script text-slate-700 text-center">Presenças Confirmadas ({rsvps.length})</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {rsvps.map((rsvp: any) => (
+              <div key={rsvp.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group">
+                <div className="flex flex-col">
+                  <span className="font-medium text-slate-700">{rsvp.name}</span>
+                  <span className="text-xs text-slate-500">{rsvp.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <button 
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      try {
+                        await deleteDoc(doc(db, 'rsvps', rsvp.id));
+                      } catch(err: any) {
+                        console.error(err);
+                        alert('Erro ao excluir presença: ' + err.message);
+                      }
+                    }} 
+                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-slate-50 rounded-full transition-all"
+                    title="Excluir presença"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -561,43 +758,6 @@ function AdminPanel() {
     }
   };
 
-  const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress to 70% quality JPEG
-        };
-        img.onerror = (error) => reject(error);
-      };
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
   const handleAddGift = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!giftName || !giftValue) return;
@@ -746,6 +906,65 @@ function AdminPanel() {
                 )}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        {/* Images Management */}
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-8">
+          <h2 className="text-xl font-medium text-slate-800">Gerenciar Imagens do Site</h2>
+          
+          <div className="space-y-6">
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+              <h3 className="text-sm font-medium text-slate-700 mb-2">Foto "O Evento"</h3>
+              <p className="text-xs text-slate-500 mb-4">Escolha uma foto para destacar o espaço "O Evento / Convite".</p>
+              <input 
+                type="file" 
+                accept="image/*"
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    try {
+                      const base64 = await compressImage(e.target.files[0]);
+                      await setDoc(doc(db, 'site_images', 'evento'), { base64 });
+                      alert('Foto do evento atualizada!');
+                    } catch(err) {
+                      alert('Erro ao atualizar. Tente uma foto menor.');
+                    }
+                  }
+                }}
+                className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+              />
+            </div>
+
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
+              <h3 className="text-sm font-medium text-slate-700 mb-2">Fotos "Nossos Momentos"</h3>
+              <p className="text-xs text-slate-500 mb-4">Adicione até 6 fotos para a galeria do site.</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map(pos => (
+                  <div key={pos} className="border border-slate-200 bg-white p-3 rounded-lg flex flex-col items-center text-center gap-2">
+                    <span className="text-xs font-medium text-slate-500">Espaço {pos}</span>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          try {
+                            const base64 = await compressImage(e.target.files[0]);
+                            const currentDoc = await getDoc(doc(db, 'site_images', 'galeria'));
+                            const images = currentDoc.exists() ? currentDoc.data().images || {} : {};
+                            images[pos] = base64;
+                            await setDoc(doc(db, 'site_images', 'galeria'), { images });
+                            alert(`Foto da galeria (espaço ${pos}) atualizada!`);
+                          } catch(err) {
+                            alert('Erro ao atualizar foto. Tente uma foto menor.');
+                          }
+                        }
+                      }}
+                      className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
