@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
-import { Heart, Calendar, Camera, MessageCircle, CheckCircle, Gift, Lock, LogOut, Menu, X, Upload, Trash2 } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Heart, Calendar, Camera, MessageCircle, CheckCircle, Gift, Lock, LogOut, Menu, X, Upload, Trash2, Download } from 'lucide-react';
 import { auth, db, storage } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
@@ -30,23 +31,23 @@ function SharedLayout() {
   return (
     <div className="min-h-screen watercolor-bg flex flex-col font-sans">
       {/* Top Header Section */}
-      <header className="pt-12 pb-8 px-4 flex flex-col items-center">
-        <div className="font-script text-7xl md:text-9xl text-blue-400 mb-8 drop-shadow-sm select-none">
+      <header className="pt-24 pb-16 px-4 flex flex-col items-center">
+        <div className="font-script text-6xl md:text-8xl lg:text-[7rem] text-slate-700 mb-12 select-none">
           <Link to="/">Josi e Gabriel</Link>
         </div>
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex flex-wrap justify-center gap-2 max-w-5xl">
+        <nav className="hidden md:flex flex-wrap justify-center gap-6 max-w-5xl items-center">
           {navLinks.map((link) => (
             <NavLink 
               key={link.name} 
               to={link.href} 
-              className={({isActive}) => `px-6 py-2 rounded-md text-sm font-medium transition-all ${isActive ? 'bg-blue-900 text-white shadow-md transform scale-105' : 'bg-blue-800 text-white hover:bg-blue-900'}`}
+              className={({isActive}) => `text-base md:text-lg font-medium transition-colors ${isActive ? 'text-[#8C7A6B] font-semibold' : 'text-slate-500 hover:text-[#8C7A6B]'}`}
             >
               {link.name}
             </NavLink>
           ))}
-          <Link to="/admin" className="px-6 py-2 rounded-md text-sm font-medium bg-blue-100/50 text-blue-900 hover:bg-blue-200 transition-all flex items-center gap-1">
+          <Link to="/admin" className="text-base md:text-lg font-medium text-slate-400 hover:text-[#8C7A6B] transition-colors flex items-center gap-1">
              <Lock className="w-4 h-4" />
           </Link>
         </nav>
@@ -122,20 +123,22 @@ function Countdown() {
   if (!timeLeft) return null;
 
   return (
-    <div className="flex gap-4 sm:gap-8 justify-center mt-8 p-6 max-w-md mx-auto">
+    <div className="flex gap-6 sm:gap-10 justify-center mt-8 p-6 max-w-lg mx-auto">
       <div className="flex flex-col items-center">
-        <span className="text-4xl sm:text-5xl font-light text-blue-900">{timeLeft.days}</span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-blue-400 mt-2">Dias</span>
+        <span className="text-4xl sm:text-5xl font-light text-slate-700">{timeLeft.days}</span>
+        <span className="text-[10px] uppercase tracking-widest text-[#8C7A6B] mt-2">Dias</span>
       </div>
-      <div className="text-4xl font-light text-blue-200 self-center mb-6">:</div>
       <div className="flex flex-col items-center">
-        <span className="text-4xl sm:text-5xl font-light text-blue-900">{timeLeft.hours.toString().padStart(2, '0')}</span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-blue-400 mt-2">Horas</span>
+        <span className="text-4xl sm:text-5xl font-light text-slate-700">{timeLeft.hours.toString().padStart(2, '0')}</span>
+        <span className="text-[10px] uppercase tracking-widest text-[#8C7A6B] mt-2">Horas</span>
       </div>
-      <div className="text-4xl font-light text-blue-200 self-center mb-6">:</div>
       <div className="flex flex-col items-center">
-        <span className="text-4xl sm:text-5xl font-light text-blue-900">{timeLeft.minutes.toString().padStart(2, '0')}</span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-blue-400 mt-2">Mins</span>
+        <span className="text-4xl sm:text-5xl font-light text-slate-700">{timeLeft.minutes.toString().padStart(2, '0')}</span>
+        <span className="text-[10px] uppercase tracking-widest text-[#8C7A6B] mt-2">Minutos</span>
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-4xl sm:text-5xl font-light text-slate-700">{timeLeft.seconds.toString().padStart(2, '0')}</span>
+        <span className="text-[10px] uppercase tracking-widest text-[#8C7A6B] mt-2">Segundos</span>
       </div>
     </div>
   );
@@ -143,26 +146,25 @@ function Countdown() {
 
 function Inicio() {
   return (
-    <div className="text-center w-full max-w-5xl mx-auto space-y-12 pb-20">
+    <div className="relative text-center w-full max-w-5xl mx-auto space-y-12 pb-20">
       {/* Framed Photo */}
-      <div className="relative group">
-        <div className="bg-white p-4 md:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-sm transform -rotate-1 transition-transform group-hover:rotate-0 duration-500 max-w-4xl mx-auto border border-slate-100">
-          <div className="overflow-hidden bg-slate-100 aspect-[16/10] relative">
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-12 z-20">
+        <div className="bg-white p-2 shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100 relative overflow-hidden">
+          <div className="overflow-hidden aspect-[16/10] relative rounded-xl">
             <img 
               src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=2000" 
               alt="Josi e Gabriel" 
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 ring-1 ring-inset ring-black/5"></div>
           </div>
         </div>
-        {/* Decorative floral element (simulated with CSS or subtle opacity) */}
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[url('https://www.transparenttextures.com/patterns/pinstripe.png')] opacity-10 pointer-events-none"></div>
       </div>
 
-      <div className="space-y-4">
-        <p className="text-blue-400 font-medium tracking-[0.2em] uppercase text-sm">Save the Date</p>
-        <h2 className="text-3xl md:text-5xl font-serif text-blue-900 italic">13 de Agosto de 2026</h2>
+      {/* Removed small corner images per request */}
+
+      <div className="space-y-4 pt-10">
+        <p className="text-[#8C7A6B] font-medium tracking-[0.2em] uppercase text-sm">Save the Date</p>
+        <h2 className="text-3xl md:text-5xl font-serif text-slate-700 italic">13 de Agosto de 2026</h2>
       </div>
 
       <Countdown />
@@ -424,11 +426,11 @@ function Recados() {
   return (
     <div className="w-full space-y-12 max-w-3xl mx-auto">
       <div className="text-center space-y-4">
-        <MessageCircle className="w-8 h-8 text-blue-300 mx-auto opacity-50" />
-        <h2 className="text-4xl md:text-5xl font-script text-blue-400">Deixe seu Recado</h2>
+        <MessageCircle className="w-8 h-8 text-rose-300 mx-auto opacity-50" />
+        <h2 className="text-4xl md:text-5xl font-script text-rose-400">Deixe seu Recado</h2>
       </div>
 
-      <form onSubmit={handleSendMessage} className="bg-gradient-to-br from-blue-300/90 to-blue-400/90 backdrop-blur-md p-8 md:p-12 rounded-[3rem] shadow-2xl text-white relative overflow-hidden">
+      <form onSubmit={handleSendMessage} className="bg-gradient-to-br from-rose-200/90 to-rose-300/90 backdrop-blur-md p-8 md:p-12 rounded-[3rem] shadow-2xl text-white relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
         
@@ -447,7 +449,7 @@ function Recados() {
             <label className="text-[10px] uppercase tracking-widest text-white/80 font-semibold ml-1">Sua Mensagem</label>
             <textarea required value={msgText} onChange={e => setMsgText(e.target.value)} rows={4} placeholder="Escreva algo carinhoso..." className="w-full px-5 py-4 rounded-[1.5rem] bg-white/20 text-white border-transparent focus:bg-white/30 focus:ring-2 focus:ring-white/50 outline-none transition-all resize-none placeholder-white/40"></textarea>
           </div>
-          <button type="submit" className="w-full py-4 mt-6 bg-white text-blue-400 hover:bg-blue-50 font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] cursor-pointer">Enviar Recado com Carinho</button>
+          <button type="submit" className="w-full py-4 mt-6 bg-white text-rose-400 hover:bg-rose-50 font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] cursor-pointer">Enviar Recado com Carinho</button>
         </div>
       </form>
 
@@ -508,12 +510,12 @@ function Confirmacao() {
   return (
     <div className="w-full space-y-12 max-w-2xl mx-auto">
       <div className="text-center space-y-4">
-        <CheckCircle className="w-8 h-8 text-blue-300 mx-auto opacity-50" />
-        <h2 className="text-4xl md:text-5xl font-script text-blue-400">Confirmar Presença</h2>
+        <CheckCircle className="w-8 h-8 text-rose-300 mx-auto opacity-50" />
+        <h2 className="text-4xl md:text-5xl font-script text-rose-400">Confirmar Presença</h2>
         <p className="text-slate-500 font-light max-w-sm mx-auto tracking-wide">É uma alegria imensa ter você conosco. Por favor, confirme até 30 dias antes.</p>
       </div>
 
-      <form onSubmit={handleSendRsvp} className="bg-gradient-to-br from-blue-300/90 to-blue-400/90 backdrop-blur-md p-8 md:p-12 rounded-[3rem] shadow-2xl space-y-8 text-white relative overflow-hidden">
+      <form onSubmit={handleSendRsvp} className="bg-gradient-to-br from-rose-200/90 to-rose-300/90 backdrop-blur-md p-8 md:p-12 rounded-[3rem] shadow-2xl space-y-8 text-white relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-black/10 rounded-full blur-3xl"></div>
         
@@ -526,7 +528,7 @@ function Confirmacao() {
             <label className="text-[10px] uppercase tracking-widest text-white/80 font-semibold ml-1">Telefone WhatsApp</label>
             <input required type="text" value={rsvpPhone} onChange={e => setRsvpPhone(e.target.value)} placeholder="(00) 00000-0000" className="w-full px-5 py-4 rounded-2xl bg-white/20 text-white placeholder-white/40 border-transparent focus:bg-white/30 focus:ring-2 focus:ring-white/50 outline-none transition-all" />
           </div>
-          <button type="submit" className="w-full py-4 mt-6 bg-white text-blue-400 hover:bg-blue-50 font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] cursor-pointer">Confirmar Minha Presença</button>
+          <button type="submit" className="w-full py-4 mt-6 bg-white text-rose-400 hover:bg-rose-50 font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] cursor-pointer">Confirmar Minha Presença</button>
         </div>
       </form>
 
@@ -590,30 +592,36 @@ function Presentes() {
       </div>
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 pt-6 pb-20">
-        {gifts.map(gift => (
-          <div key={gift.id} className="bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.05)] rounded-2xl border border-blue-50/50 flex flex-col group transition-all hover:shadow-xl hover:-translate-y-1">
-            <div className="h-56 bg-slate-50 relative overflow-hidden rounded-xl">
-              {gift.imageUrls && gift.imageUrls[0] ? (
-                <img src={gift.imageUrls[0]} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Gift className="w-12 h-12 text-blue-100" />
+        {gifts.map(gift => {
+          const valueStr = gift.value.toFixed(2);
+          const [intPart, decPart] = valueStr.split('.');
+          return (
+            <div key={gift.id} className="bg-white/80 p-3 shadow-sm rounded-sm border border-slate-200/60 flex flex-col group transition-all hover:shadow-md">
+              <div className="h-48 bg-slate-100 relative overflow-hidden rounded-sm">
+                {gift.imageUrls && gift.imageUrls[0] ? (
+                  <img src={gift.imageUrls[0]} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Gift className="w-10 h-10 text-slate-300" />
+                  </div>
+                )}
+              </div>
+              <div className="p-4 flex-grow flex flex-col text-center items-center justify-between">
+                <h3 className="font-semibold text-blue-600 text-xs tracking-wider uppercase mb-4 h-10 flex items-center justify-center leading-tight w-full px-2">{gift.name}</h3>
+                <div className="text-slate-500 mb-6 flex items-baseline justify-center gap-1">
+                  <span className="text-sm font-medium">R$</span>
+                  <span className="text-4xl font-light">{intPart}</span>
+                  <span className="text-sm font-medium">,{decPart}</span>
                 </div>
-              )}
-              <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-semibold text-blue-500 shadow-sm">
-                R$ {gift.value.toFixed(2)}
+                <button 
+                  onClick={() => navigate('/pagamento-pix', { state: { gift } })}
+                  className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
+                  Presentear
+                </button>
               </div>
             </div>
-            <div className="p-5 flex-grow flex flex-col text-center">
-              <h3 className="font-medium text-slate-800 mb-6">{gift.name}</h3>
-              <button 
-                onClick={() => navigate('/pagamento-pix', { state: { gift } })}
-                className="mt-auto block w-full py-3 bg-blue-300 hover:bg-blue-400 text-white font-medium rounded-xl transition-all shadow-sm active:scale-[0.98] cursor-pointer">
-                Presentear com Pix
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         
         {gifts.length === 0 && (
           <div className="col-span-full py-20 text-center text-blue-300 bg-white shadow-sm rounded-[2rem] border border-blue-50 border-dashed">
