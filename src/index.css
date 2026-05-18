@@ -5,6 +5,26 @@
   --font-serif: "Playfair Display", serif;
   --font-script: "Great Vibes", cursive;
   --font-sans: "Montserrat", sans-serif;
+  
+  --color-blue-50: #f4f8f8;
+  --color-blue-100: #eaf1f2;
+  --color-blue-200: #d6e6e8;
+  --color-blue-300: #b5d5d8;
+  --color-blue-400: #8ebcc2;
+  --color-blue-500: #6ca0a7;
+  --color-blue-600: #548189;
+  --color-blue-700: #466870;
+  --color-blue-800: #3c565d;
+  --color-blue-900: #34484f;
+
+  --color-rose-50: #fdf8f9;
+  --color-rose-100: #faedf0;
+  --color-rose-200: #f3d8dd;
+  --color-rose-300: #e9b9c3;
+  --color-rose-400: #dc92a2;
+  --color-rose-500: #ce6c81;
+  --color-rose-600: #b24d62;
+  --color-rose-700: #963d50;
 }
 
 body {
@@ -12,12 +32,7 @@ body {
 }
 
 .watercolor-bg {
-  background-color: #f0f7ff;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(186, 230, 253, 0.4) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(186, 230, 253, 0.4) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 80%);
-  background-attachment: fixed;
+  background-color: #e3eff8;
 }
 
 @keyframes fade-in-up {
