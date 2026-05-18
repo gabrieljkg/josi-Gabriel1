@@ -29,7 +29,24 @@ function SharedLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen watercolor-bg flex flex-col font-sans">
+    <div className="min-h-screen watercolor-bg flex flex-col font-sans relative overflow-x-hidden">
+      {/* Imagem Floral Canto Superior Esquerdo - O usuário fará upload */}
+      <img 
+        src="/flor-esq.png" 
+        alt="" 
+        className="absolute top-0 left-0 w-48 md:w-80 pointer-events-none z-10 animate-fade-in-up MixBlendMultiply"
+        style={{ mixBlendMode: 'multiply', opacity: 0.8 }}
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+      />
+      {/* Imagem Floral Canto Superior Direito - O usuário fará upload */}
+      <img 
+        src="/flor-dir.png" 
+        alt="" 
+        className="absolute top-0 right-0 w-48 md:w-80 pointer-events-none z-10 animate-fade-in-up"
+        style={{ mixBlendMode: 'multiply', opacity: 0.8, transform: 'scaleX(-1)' }}
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+      />
+
       {/* Top Header Section */}
       <header className="pt-24 pb-16 px-4 flex flex-col items-center">
         <div className="font-script text-6xl md:text-8xl lg:text-[7rem] text-slate-700 mb-12 select-none">
@@ -83,7 +100,7 @@ function SharedLayout() {
       </main>
 
       <footer className="py-12 border-t border-blue-100/50 text-center text-slate-400 text-sm">
-        <p>Josi & Gabriel &bull; 13 de Agosto de 2026</p>
+        <p>Josi & Gabriel &bull; 11 de Agosto de 2026</p>
       </footer>
     </div>
   );
@@ -164,7 +181,7 @@ function Inicio() {
 
       <div className="space-y-4 pt-10">
         <p className="text-[#8C7A6B] font-medium tracking-[0.2em] uppercase text-sm">Save the Date</p>
-        <h2 className="text-3xl md:text-5xl font-serif text-slate-700 italic">13 de Agosto de 2026</h2>
+        <h2 className="text-3xl md:text-5xl font-serif text-slate-700 italic">11 de Agosto de 2026</h2>
       </div>
 
       <Countdown />
@@ -272,7 +289,7 @@ function Casamento() {
         <div className="space-y-6">
           <div className="space-y-2">
             <h3 className="text-blue-900 font-medium uppercase tracking-widest text-xs">Data e Horário</h3>
-            <p className="text-2xl text-slate-700 font-light">13 de Agosto de 2026 às 19:30h</p>
+            <p className="text-2xl text-slate-700 font-light">11 de Agosto de 2026 às 19:30h</p>
           </div>
           <div className="space-y-2">
             <h3 className="text-blue-900 font-medium uppercase tracking-widest text-xs">Local</h3>
@@ -592,41 +609,73 @@ function Presentes() {
       </div>
       
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 pt-6 pb-20">
-        {gifts.map(gift => {
-          const valueStr = gift.value.toFixed(2);
-          const [intPart, decPart] = valueStr.split('.');
-          return (
-            <div key={gift.id} className="bg-white/80 p-3 shadow-sm rounded-sm border border-slate-200/60 flex flex-col group transition-all hover:shadow-md">
-              <div className="h-48 bg-slate-100 relative overflow-hidden rounded-sm">
-                {gift.imageUrls && gift.imageUrls[0] ? (
-                  <img src={gift.imageUrls[0]} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" referrerPolicy="no-referrer" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Gift className="w-10 h-10 text-slate-300" />
-                  </div>
-                )}
-              </div>
-              <div className="p-4 flex-grow flex flex-col text-center items-center justify-between">
-                <h3 className="font-semibold text-blue-600 text-xs tracking-wider uppercase mb-4 h-10 flex items-center justify-center leading-tight w-full px-2">{gift.name}</h3>
-                <div className="text-slate-500 mb-6 flex items-baseline justify-center gap-1">
-                  <span className="text-sm font-medium">R$</span>
-                  <span className="text-4xl font-light">{intPart}</span>
-                  <span className="text-sm font-medium">,{decPart}</span>
+        {gifts.length === 0 ? (
+          [
+            { id: 'm1', name: 'Jogo de Jantar 30 Peças', value: 450.00, imageUrls: ['https://images.unsplash.com/photo-1611651817740-80252b415aef?auto=format&fit=crop&q=80&w=600'] },
+            { id: 'm2', name: 'Máquina de Café Expresso', value: 550.00, imageUrls: ['https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?auto=format&fit=crop&q=80&w=600'] },
+            { id: 'm3', name: 'Conjunto de Panelas', value: 350.00, imageUrls: ['https://images.unsplash.com/photo-1584990347449-a3162b704cd6?auto=format&fit=crop&q=80&w=600'] },
+            { id: 'm4', name: 'Cota Lua de Mel - Jantar', value: 250.00, imageUrls: ['https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600'] }
+          ].map(gift => {
+            const valueStr = gift.value.toFixed(2);
+            const [intPart, decPart] = valueStr.split('.');
+            return (
+              <div key={gift.id} className="bg-white/80 p-3 shadow-sm rounded-sm border border-slate-200/60 flex flex-col group transition-all hover:shadow-md">
+                <div className="h-48 bg-slate-100 relative overflow-hidden rounded-sm">
+                  {gift.imageUrls && gift.imageUrls[0] ? (
+                    <img src={gift.imageUrls[0]} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Gift className="w-10 h-10 text-slate-300" />
+                    </div>
+                  )}
                 </div>
-                <button 
-                  onClick={() => navigate('/pagamento-pix', { state: { gift } })}
-                  className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
-                  Presentear
-                </button>
+                <div className="p-4 flex-grow flex flex-col text-center items-center justify-between">
+                  <h3 className="font-semibold text-blue-600 text-xs tracking-wider uppercase mb-4 h-10 flex items-center justify-center leading-tight w-full px-2">{gift.name}</h3>
+                  <div className="text-slate-500 mb-6 flex items-baseline justify-center gap-1">
+                    <span className="text-sm font-medium">R$</span>
+                    <span className="text-4xl font-light">{intPart}</span>
+                    <span className="text-sm font-medium">,{decPart}</span>
+                  </div>
+                  <button 
+                    onClick={() => navigate('/pagamento-pix', { state: { gift } })}
+                    className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
+                    Presentear
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
-        
-        {gifts.length === 0 && (
-          <div className="col-span-full py-20 text-center text-blue-300 bg-white shadow-sm rounded-[2rem] border border-blue-50 border-dashed">
-            A lista de presentes está sendo preparada com muito carinho.
-          </div>
+            );
+          })
+        ) : (
+          gifts.map(gift => {
+            const valueStr = gift.value.toFixed(2);
+            const [intPart, decPart] = valueStr.split('.');
+            return (
+              <div key={gift.id} className="bg-white/80 p-3 shadow-sm rounded-sm border border-slate-200/60 flex flex-col group transition-all hover:shadow-md">
+                <div className="h-48 bg-slate-100 relative overflow-hidden rounded-sm">
+                  {gift.imageUrls && gift.imageUrls[0] ? (
+                    <img src={gift.imageUrls[0]} alt={gift.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Gift className="w-10 h-10 text-slate-300" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 flex-grow flex flex-col text-center items-center justify-between">
+                  <h3 className="font-semibold text-blue-600 text-xs tracking-wider uppercase mb-4 h-10 flex items-center justify-center leading-tight w-full px-2">{gift.name}</h3>
+                  <div className="text-slate-500 mb-6 flex items-baseline justify-center gap-1">
+                    <span className="text-sm font-medium">R$</span>
+                    <span className="text-4xl font-light">{intPart}</span>
+                    <span className="text-sm font-medium">,{decPart}</span>
+                  </div>
+                  <button 
+                    onClick={() => navigate('/pagamento-pix', { state: { gift } })}
+                    className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
+                    Presentear
+                  </button>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
