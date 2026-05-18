@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { Heart, Calendar, Camera, MessageCircle, CheckCircle, Gift, Lock, LogOut, Menu, X, Upload, Trash2, Download } from 'lucide-react';
 import { auth, db, storage } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, doc, deleteDoc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { handleFirestoreError, OperationType } from './lib/firebaseUtils';
 
@@ -636,11 +636,19 @@ function Presentes() {
                     <span className="text-4xl font-light">{intPart}</span>
                     <span className="text-sm font-medium">,{decPart}</span>
                   </div>
-                  <button 
-                    onClick={() => navigate('/pagamento-pix', { state: { gift } })}
-                    className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
-                    Presentear
-                  </button>
+                  {(gift.purchasedCount || 0) >= 2 ? (
+                    <button 
+                      disabled
+                      className="mt-auto block w-3/4 py-2 bg-slate-300 text-white text-sm font-medium rounded-sm shadow-sm cursor-not-allowed">
+                      Já Presenteado
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => navigate('/pagamento-pix', { state: { gift } })}
+                      className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
+                      Presentear
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -667,11 +675,19 @@ function Presentes() {
                     <span className="text-4xl font-light">{intPart}</span>
                     <span className="text-sm font-medium">,{decPart}</span>
                   </div>
-                  <button 
-                    onClick={() => navigate('/pagamento-pix', { state: { gift } })}
-                    className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
-                    Presentear
-                  </button>
+                  {(gift.purchasedCount || 0) >= 2 ? (
+                    <button 
+                      disabled
+                      className="mt-auto block w-3/4 py-2 bg-slate-300 text-white text-sm font-medium rounded-sm shadow-sm cursor-not-allowed">
+                      Já Presenteado
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => navigate('/pagamento-pix', { state: { gift } })}
+                      className="mt-auto block w-3/4 py-2 bg-[#E17E9B] hover:bg-[#D56B8A] text-white text-sm font-medium rounded-sm transition-all shadow-sm active:scale-[0.98] cursor-pointer">
+                      Presentear
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -686,6 +702,8 @@ function PagamentoPix() {
   const location = useLocation();
   const navigate = useNavigate();
   const gift = location.state?.gift;
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   if (!gift) {
     return (
@@ -695,6 +713,33 @@ function PagamentoPix() {
       </div>
     );
   }
+
+  const handleConfirmPurchase = async () => {
+    if ((gift.purchasedCount || 0) >= 2) {
+      alert("Este presente já foi presenteado o limite de vezes!");
+      return navigate('/presentes');
+    }
+    
+    // We only try to update if it's not a dummy ID (dummy IDs start with 'm')
+    if (gift.id.startsWith('m')) {
+      setConfirmed(true);
+      return;
+    }
+
+    try {
+      setIsConfirming(true);
+      const giftRef = doc(db, 'gifts', gift.id);
+      await updateDoc(giftRef, {
+        purchasedCount: increment(1)
+      });
+      setConfirmed(true);
+    } catch (e) {
+      console.error(e);
+      alert("Houve um erro ao confirmar ou o presente já foi presenteado por outra pessoa.");
+    } finally {
+      setIsConfirming(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto space-y-12 bg-white/70 backdrop-blur-md p-8 md:p-12 rounded-[3.5rem] border border-blue-100/50 shadow-sm text-center relative overflow-hidden">
@@ -713,31 +758,50 @@ function PagamentoPix() {
         <p className="text-4xl font-light text-blue-400 tracking-tight">R$ {gift.value.toFixed(2)}</p>
       </div>
       
-      <div className="space-y-6 text-left bg-white/50 p-6 rounded-[2rem] border border-blue-50/50">
-        <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-blue-900 font-bold mb-3 opacity-50">Chave Pix (Celular)</p>
-          <div className="relative group">
-            <div className="bg-slate-50 w-full py-4 rounded-2xl font-mono text-2xl font-semibold text-blue-900 tracking-widest text-center border border-blue-100 group-hover:border-blue-200 transition-colors">
-              {pixPhone}
+      {confirmed ? (
+        <div className="space-y-6 text-center bg-white/50 p-6 rounded-[2rem] border border-green-100">
+          <div className="w-12 h-12 bg-green-50 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-6 h-6" />
+          </div>
+          <h3 className="text-xl font-medium text-slate-700">Confirmado com sucesso!</h3>
+          <p className="text-sm text-slate-500">Agradecemos imensamente pelo seu carinho e presente.</p>
+        </div>
+      ) : (
+        <div className="space-y-6 text-left bg-white/50 p-6 rounded-[2rem] border border-blue-50/50">
+          <div className="space-y-1">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-blue-900 font-bold mb-3 opacity-50">Chave Pix (Celular)</p>
+            <div className="relative group">
+              <div className="bg-slate-50 w-full py-4 rounded-2xl font-mono text-2xl font-semibold text-blue-900 tracking-widest text-center border border-blue-100 group-hover:border-blue-200 transition-colors">
+                {pixPhone}
+              </div>
             </div>
           </div>
-        </div>
-        
-        <button 
-          onClick={() => {
-            navigator.clipboard.writeText(pixPhone);
-            alert("Chave Pix copiada com sucesso!");
-          }}
-          className="w-full py-4 bg-blue-400 hover:bg-blue-500 text-white font-medium rounded-2xl transition-all shadow-md active:scale-[0.98] cursor-pointer"
-        >
-          Copiar Chave Pix
-        </button>
+          
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(pixPhone);
+              alert("Chave Pix copiada com sucesso!");
+            }}
+            className="w-full py-4 bg-blue-400 hover:bg-blue-500 text-white font-medium rounded-2xl transition-all shadow-md active:scale-[0.98] cursor-pointer"
+          >
+            Copiar Chave Pix
+          </button>
+  
+          <ul className="text-[11px] text-slate-400 space-y-2 pt-2 px-1 font-medium leading-relaxed">
+            <li className="flex gap-2"><span>&bull;</span> Abra seu app do banco e escolha Pix Escanear ou Pagar.</li>
+            <li className="flex gap-2"><span>&bull;</span> Use a chave celular acima e confira o valor.</li>
+            <li className="flex gap-2 text-rose-400 font-bold mt-4"><span>&bull;</span> Importante: Após fazer o Pix, clique no botão abaixo para confirmar.</li>
+          </ul>
 
-        <ul className="text-[11px] text-slate-400 space-y-2 pt-2 px-1 font-medium leading-relaxed">
-          <li className="flex gap-2"><span>&bull;</span> Abra seu app do banco e escolha Pix Escanear ou Pagar.</li>
-          <li className="flex gap-2"><span>&bull;</span> Use a chave celular acima e confira o valor.</li>
-        </ul>
-      </div>
+          <button 
+            onClick={handleConfirmPurchase}
+            disabled={isConfirming}
+            className="w-full py-4 mt-6 bg-rose-400 hover:bg-rose-500 text-white font-medium rounded-2xl transition-all shadow-md active:scale-[0.98] cursor-pointer disabled:opacity-50"
+          >
+            {isConfirming ? 'Confirmando...' : 'Já fiz o Pix e confirmo a doação'}
+          </button>
+        </div>
+      )}
 
       <div className="pt-4">
         <p className="text-sm text-blue-300 mb-8 italic font-light tracking-wide">Deus abençoe imensamente sua vida! ❤️</p>
