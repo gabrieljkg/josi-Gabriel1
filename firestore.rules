@@ -6,7 +6,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'gabrielcalid@gmail.com' && request.auth.token.email_verified == true;
+      return request.auth != null && request.auth.token.email == 'gabrielcalid@gmail.com';
     }
 
     function incoming() {
@@ -18,7 +18,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128;
     }
 
     // --- Message ---
@@ -51,7 +51,7 @@ service cloud.firestore {
       allow get: if isValidId(rsvpId);
       allow list: if true; // Or isAdmin(), but let's allow public if needed
       allow create: if isValidId(rsvpId) && isValidRsvp(incoming());
-      allow update, delete: if isAdmin();
+      allow update, delete: if true;
     }
 
     // --- Gift ---
@@ -73,12 +73,23 @@ service cloud.firestore {
              (data.imageUrls.size() == 0 || (data.imageUrls[0] is string));
     }
 
+    function isPurchaseUpdate() {
+      return incoming().diff(existing()).affectedKeys().hasOnly(['purchasedCount']) &&
+             incoming().get('purchasedCount', 0) == existing().get('purchasedCount', 0) + 1 &&
+             incoming().get('purchasedCount', 0) <= 2;
+    }
+
     match /gifts/{giftId} {
       allow get: if isValidId(giftId);
       allow list: if true; // Public registry
       allow create: if isAdmin() && isValidId(giftId) && isValidGift(incoming());
-      allow update: if isAdmin() && isUpdateGift(incoming()) && incoming().createdAt == existing().createdAt;
+      allow update: if (isAdmin() && isUpdateGift(incoming()) && incoming().createdAt == existing().createdAt) || isPurchaseUpdate();
       allow delete: if isAdmin();
+    }
+
+    match /site_images/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
