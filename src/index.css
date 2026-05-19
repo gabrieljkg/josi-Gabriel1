@@ -1,37 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://googleapis.com');
+
+@theme {
+  --font-serif: "Playfair Display", serif;
+  --font-script: "Great Vibes", cursive;
+  --font-sans: "Montserrat", sans-serif;
+  
+  --color-blue-50: #f4f8f8;
+  --color-blue-100: #eaf1f2;
+  --color-blue-200: #d6e6e8;
+  --color-blue-300: #b5d5d8;
+  --color-blue-400: #8ebcc2;
+  --color-blue-500: #6ca0a7;
+  --color-blue-600: #548189;
+  --color-blue-700: #466870;
+  --color-blue-800: #3c565d;
+  --color-blue-900: #34484f;
+
+  --color-rose-50: #fdf8f9;
+  --color-rose-100: #faedf0;
+  --color-rose-200: #f3d8dd;
+  --color-rose-300: #e9b9c3;
+  --color-rose-400: #dc92a2;
+  --color-rose-500: #ce6c81;
+  --color-rose-600: #b24d62;
+  --color-rose-700: #963d50;
+}
 
 @layer base {
   body {
     @apply antialiased;
   }
-  
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: 2rem;
   }
 }
 
-@layer components {
-  .watercolor-bg {
-    background-color: #e3eff8;
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 0.8s ease-out forwards;
-  }
+.watercolor-bg {
+  background-color: #e3eff8;
 }
 
 @keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
 }
