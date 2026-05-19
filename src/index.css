@@ -1,8 +1,17 @@
+/* Fontes */
 @import url('https://googleapis.com');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Estilos básicos para o build não quebrar */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 .watercolor-bg {
   background-color: #e3eff8;
@@ -15,8 +24,4 @@
 
 .animate-fade-in-up {
   animation: fade-in-up 0.8s ease-out forwards;
-}
-
-html {
-  scroll-behavior: smooth;
 }
